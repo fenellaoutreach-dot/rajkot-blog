@@ -1,1 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Original editorial illustration of a railway station redevelopment"><rect width="1200" height="675" fill="#10283e"/><path d="M0 510h1200v165H0z" fill="#dce8ed"/><path d="M125 290h950v245H125z" fill="#f0f5f7"/><path d="M80 290l150-100h740l150 100z" fill="#f36b35"/><path d="M220 370h150v165H220zm250 0h150v165H470zm250 0h150v165H720z" fill="#285a72"/><path d="M130 550h940" stroke="#56788c" stroke-width="14"/><text x="600" y="108" text-anchor="middle" font-family="Arial,sans-serif" font-size="49" font-weight="bold" fill="white">JETALSAR JUNCTION</text><text x="600" y="162" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" fill="#dce8ed">Station redevelopment • Rajkot district</text><text x="600" y="635" text-anchor="middle" font-family="Arial,sans-serif" font-size="23" fill="#10283e">Original illustration by Rajkot.blog — not an actual photograph</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Detailed editorial illustration of an Indian railway station platform representing Jetalsar Junction redevelopment, not an actual photograph">
+<defs>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#6cb6e9"/><stop offset="1" stop-color="#e5f6ff"/></linearGradient>
+<linearGradient id="wall" x2="0" y2="1"><stop stop-color="#fff9e9"/><stop offset="1" stop-color="#e4c8a7"/></linearGradient>
+<linearGradient id="floor" x2="0" y2="1"><stop stop-color="#f2e6d8"/><stop offset="1" stop-color="#b7a99d"/></linearGradient>
+<linearGradient id="train" x2="0" y2="1"><stop stop-color="#2783c0"/><stop offset="1" stop-color="#12426b"/></linearGradient>
+<pattern id="tiles" width="90" height="45" patternUnits="userSpaceOnUse"><path d="M0 44H90M89 0V45" fill="none" stroke="#ffffff" stroke-opacity=".3" stroke-width="2"/></pattern>
+<pattern id="brick" width="35" height="18" patternUnits="userSpaceOnUse"><path d="M0 17H35M17 0V17" fill="none" stroke="#873f2e" stroke-opacity=".32"/></pattern>
+<filter id="shadow"><feDropShadow dx="0" dy="9" stdDeviation="9" flood-opacity=".22"/></filter>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<path d="M0 340Q190 250 420 335T860 322T1600 335V530H0Z" fill="#b1d1a6" opacity=".55"/>
+<path d="M0 380Q200 310 420 370T900 355T1600 390V550H0Z" fill="#638d61" opacity=".6"/>
+<g stroke="#687e8b" stroke-width="4" opacity=".7"><path d="M1220 210V610M1450 200V640M1160 210H1600M1190 270H1600"/><path d="M1215 210l40 60m195-70l-45 70"/></g>
+<path d="M0 355H1130V665H0Z" fill="url(#wall)"/>
+<path d="M0 342H1140V376H0Z" fill="#a64b3f"/>
+<path d="M0 355H1140V342L1085 275H45Z" fill="#b04c43"/>
+<path d="M0 360H1140V377H0Z" fill="#f5d1a5"/>
+<path d="M0 610H1140V676H0Z" fill="#a75243"/>
+<path d="M0 610H1140V676H0Z" fill="url(#brick)"/>
+<g fill="#8c4d3b"><path d="M70 445Q70 395 120 395Q170 395 170 445V611H70Z"/><path d="M235 445Q235 395 285 395Q335 395 335 445V611H235Z"/><path d="M400 445Q400 395 450 395Q500 395 500 445V611H400Z"/><path d="M565 445Q565 395 615 395Q665 395 665 445V611H565Z"/><path d="M730 445Q730 395 780 395Q830 395 830 445V611H730Z"/><path d="M895 445Q895 395 945 395Q995 395 995 445V611H895Z"/></g>
+<g fill="#3b5561"><path d="M85 449Q85 410 120 410Q155 410 155 449V610H85Z"/><path d="M250 449Q250 410 285 410Q320 410 320 449V610H250Z"/><path d="M415 449Q415 410 450 410Q485 410 485 449V610H415Z"/><path d="M580 449Q580 410 615 410Q650 410 650 449V610H580Z"/><path d="M745 449Q745 410 780 410Q815 410 815 449V610H745Z"/><path d="M910 449Q910 410 945 410Q980 410 980 449V610H910Z"/></g>
+<g fill="#e9c79c"><path d="M178 395h32v215h-32zM343 395h32v215h-32zM508 395h32v215h-32zM673 395h32v215h-32zM838 395h32v215h-32z"/></g>
+<path d="M0 665H1260L1600 900H0Z" fill="url(#floor)"/>
+<path d="M0 665H1260L1600 900H0Z" fill="url(#tiles)"/>
+<path d="M1080 668L1345 900H1400L1140 668Z" fill="#f6d45e"/>
+<path d="M1098 670L1370 900" stroke="#a87527" stroke-width="5" stroke-dasharray="13 12"/>
+<path d="M1260 668L1600 880V900H1455L1155 670Z" fill="#8c9196"/>
+<path d="M1265 685L1575 900M1340 675L1600 850" stroke="#3e444b" stroke-width="12"/>
+<path d="M1270 700L1580 900M1350 690L1600 860" stroke="#d9d9d3" stroke-width="4"/>
+<g stroke="#343a40" stroke-width="6"><path d="M1300 730l160 35M1335 780l180 40M1390 845l190 42"/></g>
+<path d="M1050 250L1580 225L1595 280L1040 325Z" fill="#5b6972"/>
+<path d="M1060 260L1575 239" stroke="#dce5e8" stroke-width="8"/>
+<g stroke="#53636e" stroke-width="14"><path d="M1090 300V680M1320 283V735M1510 267V820"/></g>
+<g stroke="#dce4e6" stroke-width="6"><path d="M1090 310L1260 255M1320 287L1460 247"/></g>
+<g fill="#fff5d2"><rect x="1160" y="275" width="100" height="11" rx="5"/><rect x="1400" y="260" width="95" height="11" rx="5"/></g>
+<g filter="url(#shadow)"><rect x="88" y="150" width="680" height="200" rx="12" fill="#f8c72c" stroke="#6f5726" stroke-width="10"/><text x="428" y="211" text-anchor="middle" font-family="sans-serif" font-size="48" font-weight="bold" fill="#1e2329">જેટલસર જંક્શન</text><text x="428" y="265" text-anchor="middle" font-family="sans-serif" font-size="44" font-weight="bold" fill="#1e2329">जेतलसर जंक्शन</text><text x="428" y="323" text-anchor="middle" font-family="Arial,sans-serif" font-size="56" font-weight="900" fill="#1e2329">JETALSAR JUNCTION</text></g>
+<path d="M112 350V665M745 350V665" stroke="#e9e9e4" stroke-width="16"/>
+<g filter="url(#shadow)"><rect x="1300" y="325" width="95" height="90" rx="7" fill="#174c9a" stroke="#ffffff" stroke-width="6"/><text x="1348" y="392" text-anchor="middle" font-family="Arial" font-size="67" fill="white" font-weight="bold">1</text></g>
+<g filter="url(#shadow)"><rect x="1165" y="420" width="160" height="64" rx="7" fill="#1a2028"/><text x="1245" y="465" text-anchor="middle" font-family="monospace" font-size="48" fill="#ff4e42">10:24</text></g>
+<g transform="translate(1435 530)"><path d="M0 50Q5 0 65 0Q120 0 130 50V170Q65 200 0 170Z" fill="url(#train)" stroke="#0a3154" stroke-width="6"/><rect x="18" y="44" width="94" height="47" rx="9" fill="#a5d9e8"/><path d="M18 104H112" stroke="#ffdb60" stroke-width="12"/><circle cx="27" cy="140" r="12" fill="#ffe9aa"/><circle cx="104" cy="140" r="12" fill="#ffe9aa"/><path d="M20 174H110" stroke="#263644" stroke-width="12"/></g>
+<g transform="translate(790 525)"><ellipse cx="50" cy="157" rx="45" ry="10" fill="#34343b" opacity=".2"/><circle cx="50" cy="25" r="18" fill="#8e5b40"/><path d="M31 45H69L80 115H20Z" fill="#d75c58"/><path d="M35 115L30 154M65 115L70 154" stroke="#3d4556" stroke-width="14"/><path d="M24 63L5 103M75 63L92 101" stroke="#8e5b40" stroke-width="12"/></g>
+<g transform="translate(970 535)"><ellipse cx="40" cy="146" rx="35" ry="9" fill="#34343b" opacity=".2"/><circle cx="40" cy="20" r="16" fill="#ad7551"/><path d="M20 40H60L68 104H12Z" fill="#f6f5ee"/><path d="M25 104L20 145M55 104L59 145" stroke="#333b49" stroke-width="12"/><path d="M17 54L0 93M65 54L80 96" stroke="#ad7551" stroke-width="10"/><rect x="78" y="91" width="25" height="32" rx="4" fill="#313f5e"/></g>
+<g><ellipse cx="58" cy="680" rx="55" ry="16" fill="#645d4b" opacity=".25"/><path d="M26 603H90L82 682H35Z" fill="#a85c3f"/><path d="M55 605V515M55 565L10 530M55 558L97 516" stroke="#557442" stroke-width="13"/><g fill="#4d8b48"><ellipse cx="32" cy="521" rx="26" ry="15" transform="rotate(-40 32 521)"/><ellipse cx="75" cy="521" rx="30" ry="15" transform="rotate(35 75 521)"/><ellipse cx="54" cy="490" rx="19" ry="35"/></g></g>
+<rect x="0" y="838" width="970" height="62" fill="#102b40" opacity=".9"/><text x="30" y="877" font-family="Arial,sans-serif" font-size="27" font-weight="bold" fill="#ffffff">EDITORIAL ILLUSTRATION — NOT AN ACTUAL PHOTO OF JETALSAR JUNCTION</text>
+</svg>
