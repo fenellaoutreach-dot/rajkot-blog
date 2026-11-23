@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Detailed editorial illustration of an Indian railway station platform representing Jetalsar Junction redevelopment, not an actual photograph">
-<defs>
+<defs><filter id="photoGrade" x="-3%" y="-3%" width="106%" height="106%"><feColorMatrix type="saturate" values="1.13"/><feComponentTransfer><feFuncR type="gamma" amplitude="1.02" exponent=".94" offset="0"/><feFuncG type="gamma" amplitude="1.01" exponent=".97" offset="0"/><feFuncB type="gamma" amplitude="1.03" exponent=".96" offset="0"/></feComponentTransfer></filter><filter id="softLight"><feGaussianBlur stdDeviation="9"/></filter><radialGradient id="sunlight" cx=".12" cy=".06" r=".95"><stop stop-color="#fffbe1" stop-opacity=".62"/><stop offset=".52" stop-color="#fff" stop-opacity="0"/></radialGradient>
 <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#6cb6e9"/><stop offset="1" stop-color="#e5f6ff"/></linearGradient>
 <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#fff9e9"/><stop offset="1" stop-color="#e4c8a7"/></linearGradient>
 <linearGradient id="floor" x2="0" y2="1"><stop stop-color="#f2e6d8"/><stop offset="1" stop-color="#b7a99d"/></linearGradient>
@@ -8,7 +8,7 @@
 <pattern id="brick" width="35" height="18" patternUnits="userSpaceOnUse"><path d="M0 17H35M17 0V17" fill="none" stroke="#873f2e" stroke-opacity=".32"/></pattern>
 <filter id="shadow"><feDropShadow dx="0" dy="9" stdDeviation="9" flood-opacity=".22"/></filter>
 </defs>
-<rect width="1600" height="900" fill="url(#sky)"/>
+<g filter="url(#photoGrade)"><rect width="1600" height="900" fill="url(#sky)"/><g fill="#fff" opacity=".5" filter="url(#softLight)"><ellipse cx="1250" cy="100" rx="250" ry="42"/><ellipse cx="1490" cy="145" rx="210" ry="32"/><ellipse cx="960" cy="95" rx="170" ry="28"/></g>
 <path d="M0 340Q190 250 420 335T860 322T1600 335V530H0Z" fill="#b1d1a6" opacity=".55"/>
 <path d="M0 380Q200 310 420 370T900 355T1600 390V550H0Z" fill="#638d61" opacity=".6"/>
 <g stroke="#687e8b" stroke-width="4" opacity=".7"><path d="M1220 210V610M1450 200V640M1160 210H1600M1190 270H1600"/><path d="M1215 210l40 60m195-70l-45 70"/></g>
@@ -42,5 +42,5 @@
 <g transform="translate(790 525)"><ellipse cx="50" cy="157" rx="45" ry="10" fill="#34343b" opacity=".2"/><circle cx="50" cy="25" r="18" fill="#8e5b40"/><path d="M31 45H69L80 115H20Z" fill="#d75c58"/><path d="M35 115L30 154M65 115L70 154" stroke="#3d4556" stroke-width="14"/><path d="M24 63L5 103M75 63L92 101" stroke="#8e5b40" stroke-width="12"/></g>
 <g transform="translate(970 535)"><ellipse cx="40" cy="146" rx="35" ry="9" fill="#34343b" opacity=".2"/><circle cx="40" cy="20" r="16" fill="#ad7551"/><path d="M20 40H60L68 104H12Z" fill="#f6f5ee"/><path d="M25 104L20 145M55 104L59 145" stroke="#333b49" stroke-width="12"/><path d="M17 54L0 93M65 54L80 96" stroke="#ad7551" stroke-width="10"/><rect x="78" y="91" width="25" height="32" rx="4" fill="#313f5e"/></g>
 <g><ellipse cx="58" cy="680" rx="55" ry="16" fill="#645d4b" opacity=".25"/><path d="M26 603H90L82 682H35Z" fill="#a85c3f"/><path d="M55 605V515M55 565L10 530M55 558L97 516" stroke="#557442" stroke-width="13"/><g fill="#4d8b48"><ellipse cx="32" cy="521" rx="26" ry="15" transform="rotate(-40 32 521)"/><ellipse cx="75" cy="521" rx="30" ry="15" transform="rotate(35 75 521)"/><ellipse cx="54" cy="490" rx="19" ry="35"/></g></g>
-<rect x="0" y="838" width="970" height="62" fill="#102b40" opacity=".9"/><text x="30" y="877" font-family="Arial,sans-serif" font-size="27" font-weight="bold" fill="#ffffff">EDITORIAL ILLUSTRATION — NOT AN ACTUAL PHOTO OF JETALSAR JUNCTION</text>
+</g><rect width="1600" height="900" fill="url(#sunlight)" pointer-events="none"/><rect x="0" y="838" width="970" height="62" fill="#102b40" opacity=".9"/><text x="30" y="877" font-family="Arial,sans-serif" font-size="27" font-weight="bold" fill="#ffffff">EDITORIAL ILLUSTRATION — NOT AN ACTUAL PHOTO OF JETALSAR JUNCTION</text>
 </svg>
