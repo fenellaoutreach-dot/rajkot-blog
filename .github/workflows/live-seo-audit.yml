@@ -114,9 +114,9 @@ jobs:
               for href in page.links:
                   target, fragment = urllib.parse.urldefrag(urllib.parse.urljoin(u, href))
                   if safe(target):
-                      # Cloudflare injects an encoded email fragment and decodes it
-                      # in the browser. A fragment-stripped request is not a page.
-                      if urllib.parse.urlsplit(target).path == "/cdn-cgi/l/email-protection" and fragment and len(fragment) >= 4 and len(fragment) % 2 == 0 and all(ch in "0123456789abcdefABCDEF" for ch in fragment):
+                      # Cloudflare injects email placeholders (with or without an encoded
+                      # fragment); this exact service endpoint is not a content page.
+                      if urllib.parse.urlsplit(target).path == "/cdn-cgi/l/email-protection":
                           protected_email_links += 1
                           continue
                       internal.add(target)
