@@ -12,9 +12,9 @@ News reports identify their sources. Travel and food guides may include publishe
 
 ## Popular guides
 
-- [Places to visit in Rajkot](https://rajkot.blog/articles/best-places-to-visit-in-rajkot.html): City attractions and nearby excursions.
-- [Famous foods of Rajkot](https://rajkot.blog/articles/famous-foods-of-rajkot.html): Regional dishes and snacks.
-- [Cafés in Rajkot](https://rajkot.blog/articles/cafes-in-rajkot-guide.html): Sourced café information.
+- [Places to visit in Rajkot](https://rajkot.blog/articles/best-places-to-visit-in-rajkot): City attractions and nearby excursions.
+- [Famous foods of Rajkot](https://rajkot.blog/articles/famous-foods-of-rajkot): Regional dishes and snacks.
+- [Cafés in Rajkot](https://rajkot.blog/articles/cafes-in-rajkot-guide): Sourced café information.
 
 ## Editorial information
 
