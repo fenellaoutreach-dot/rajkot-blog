@@ -95,6 +95,7 @@ jobs:
           issues = []
           pages = {}
           internal = set()
+          protected_email_links = 0
           required = ["og:type","og:title","og:description","og:url","og:image","twitter:card","twitter:title","twitter:description","twitter:image"]
           for u, (status, final, chain, body, error) in results:
               if status != 200 or chain or final != u:
@@ -113,6 +114,11 @@ jobs:
               for href in page.links:
                   target, fragment = urllib.parse.urldefrag(urllib.parse.urljoin(u, href))
                   if safe(target):
+                      # Cloudflare injects an encoded email fragment and decodes it
+                      # in the browser. A fragment-stripped request is not a page.
+                      if urllib.parse.urlsplit(target).path == "/cdn-cgi/l/email-protection" and fragment and len(fragment) >= 4 and len(fragment) % 2 == 0 and all(ch in "0123456789abcdefABCDEF" for ch in fragment):
+                          protected_email_links += 1
+                          continue
                       internal.add(target)
                       if fragment and target in pages and fragment not in pages[target].ids:
                           # Category filters deliberately use dynamic fragments.
@@ -125,7 +131,7 @@ jobs:
           for (old, expected), (status, final, chain, body, error) in batch(legacy, lambda pair: (pair, fetch(pair[0], False))):
               if status != 200 or final != expected or not chain or any(code not in (301,308) for code, dest in chain):
                   issues.append(("legacy redirect", old, status, final, chain, error))
-          summary = {"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"legacy_redirects_checked":len(legacy),"issues":len(issues)}
+          summary = {"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"cloudflare_protected_email_links_skipped":protected_email_links,"legacy_redirects_checked":len(legacy),"issues":len(issues)}
           print(json.dumps(summary, indent=2))
           for issue in issues: print(json.dumps(issue, ensure_ascii=True))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
