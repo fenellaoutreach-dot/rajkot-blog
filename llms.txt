@@ -1,0 +1,24 @@
+# Rajkot.blog
+
+> Independent English-language local news and practical city guides covering Rajkot, Gujarat, India, and nearby destinations.
+
+News reports identify their sources. Travel and food guides may include published visitor information and illustrative photographs; check dates, captions and official sources for current details. The website does not offer a booking API or agent-callable tools.
+
+## Main resources
+
+- [Homepage](https://rajkot.blog/): Featured stories and city guides.
+- [All articles](https://rajkot.blog/articles/): News, travel, food, education and business coverage.
+- [XML sitemap](https://rajkot.blog/sitemap.xml): Discover published pages.
+
+## Popular guides
+
+- [Places to visit in Rajkot](https://rajkot.blog/articles/best-places-to-visit-in-rajkot.html): City attractions and nearby excursions.
+- [Famous foods of Rajkot](https://rajkot.blog/articles/famous-foods-of-rajkot.html): Regional dishes and snacks.
+- [Cafés in Rajkot](https://rajkot.blog/articles/cafes-in-rajkot-guide.html): Sourced café information.
+
+## Editorial information
+
+- [About](https://rajkot.blog/about/): Website mission and coverage.
+- [Editorial policy](https://rajkot.blog/editorial-policy/): Editorial standards.
+- [Contact](https://rajkot.blog/contact/): Corrections, feedback and enquiries.
+- [Privacy policy](https://rajkot.blog/privacy-policy/): Data handling information.
