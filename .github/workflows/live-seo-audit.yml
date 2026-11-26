@@ -1,0 +1,136 @@
+name: Live SEO audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/live-seo-audit.yml'
+      - 'sitemap.xml'
+permissions:
+  contents: read
+concurrency:
+  group: rajkot-live-seo-audit
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Audit deployed pages and legacy redirects
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, json, os, time, urllib.request, urllib.error, urllib.parse
+          import xml.etree.ElementTree as ET
+          from html.parser import HTMLParser
+
+          BASE = "https://rajkot.blog"
+          SITEMAP = BASE + "/sitemap.xml"
+          HOST = "rajkot.blog"
+          LIMIT = 2_000_000
+          def safe(url):
+              p = urllib.parse.urlsplit(url)
+              return p.scheme == "https" and p.netloc == HOST
+          class Redirect(urllib.request.HTTPRedirectHandler):
+              def __init__(self):
+                  self.chain = []
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  if not safe(newurl):
+                      raise ValueError("Unexpected redirect destination")
+                  self.chain.append((code, newurl))
+                  return super().redirect_request(req, fp, code, msg, headers, newurl)
+          def fetch(url, read=True):
+              red = Redirect()
+              if not safe(url):
+                  return (0, url, [], "", "Unexpected host")
+              opener = urllib.request.build_opener(red)
+              try:
+                  req = urllib.request.Request(url, headers={"User-Agent": "RajkotBlog-SEO-Audit/1.0"})
+                  with opener.open(req, timeout=15) as res:
+                      return (res.status, res.url, red.chain, res.read(LIMIT).decode("utf-8", "replace") if read else "", "")
+              except urllib.error.HTTPError as e:
+                  return (e.code, e.url, red.chain, "", str(e))
+              except Exception as e:
+                  return (0, url, red.chain, "", str(e))
+          class Page(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=True)
+                  self.links = set()
+                  self.canon = []
+                  self.meta = {}
+                  self.images = []
+                  self.tables = []
+                  self.ids = set()
+              def handle_starttag(self, tag, attrs):
+                  a = dict(attrs)
+                  if a.get("id"): self.ids.add(a["id"])
+                  if tag == "a" and a.get("href"): self.links.add(a["href"])
+                  if tag == "link" and "canonical" in (a.get("rel") or "").lower().split(): self.canon.append(a.get("href"))
+                  if tag == "meta": self.meta[a.get("property") or a.get("name")] = a.get("content")
+                  if tag == "img": self.images.append(a)
+                  if tag == "table": self.tables.append(False)
+                  if tag == "caption" and self.tables: self.tables[-1] = True
+          # A push may precede the hosting deployment. Check sitemap readiness,
+          # but do not call a failed or stale deployment a successful audit.
+          urls = []
+          for attempt in range(4):
+              status, final, chain, body, error = fetch(SITEMAP)
+              try:
+                  if status != 200 or chain: raise ValueError(error or "Sitemap not a direct 200")
+                  root = ET.fromstring(body)
+                  urls = [e.text.strip() for e in root.findall("{*}url/{*}loc") if e.text]
+                  if not urls or len(urls) != len(set(urls)) or not all(safe(u) for u in urls): raise ValueError("Invalid sitemap URL set")
+                  if any(urllib.parse.urlsplit(u).path.endswith(".html") for u in urls): raise ValueError("Live sitemap still contains legacy .html URLs")
+                  break
+              except Exception as e:
+                  print("Sitemap readiness attempt", attempt + 1, str(e))
+                  urls = []
+                  if attempt < 3: time.sleep(15)
+          if not urls:
+              raise SystemExit("Live sitemap could not be verified.")
+          def batch(items, fn):
+              with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+                  return list(pool.map(fn, items))
+          results = batch(urls, lambda u: (u, fetch(u)))
+          issues = []
+          pages = {}
+          internal = set()
+          required = ["og:type","og:title","og:description","og:url","og:image","twitter:card","twitter:title","twitter:description","twitter:image"]
+          for u, (status, final, chain, body, error) in results:
+              if status != 200 or chain or final != u:
+                  issues.append(("sitemap status", u, status, final, chain, error))
+              if status != 200: continue
+              page = Page()
+              page.feed(body)
+              pages[u] = page
+              if page.canon != [u]: issues.append(("canonical", u, page.canon))
+              missing = [k for k in required if not page.meta.get(k)]
+              if missing: issues.append(("social metadata", u, missing))
+              if page.meta.get("og:url") != u: issues.append(("og:url mismatch", u, page.meta.get("og:url")))
+              for im in page.images:
+                  if not im.get("width") or not im.get("height"): issues.append(("image dimensions", u, im.get("src")))
+              if False in page.tables: issues.append(("table captions", u, page.tables.count(False)))
+              for href in page.links:
+                  target, fragment = urllib.parse.urldefrag(urllib.parse.urljoin(u, href))
+                  if safe(target):
+                      internal.add(target)
+                      if fragment and target in pages and fragment not in pages[target].ids:
+                          # Category filters deliberately use dynamic fragments.
+                          if urllib.parse.urlsplit(target).path != "/articles/":
+                              issues.append(("anchor review", u, target+"#"+fragment))
+          extras = sorted(internal - set(urls))
+          for u, (status, final, chain, body, error) in batch(extras, lambda u: (u, fetch(u, False))):
+              if status != 200 or chain or final != u: issues.append(("internal link status", u, status, final, chain, error))
+          legacy = [(u+".html", u) for u in urls if urllib.parse.urlsplit(u).path.startswith("/articles/") and not u.endswith("/")]
+          for (old, expected), (status, final, chain, body, error) in batch(legacy, lambda pair: (pair, fetch(pair[0], False))):
+              if status != 200 or final != expected or not chain or any(code not in (301,308) for code, dest in chain):
+                  issues.append(("legacy redirect", old, status, final, chain, error))
+          summary = {"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"legacy_redirects_checked":len(legacy),"issues":len(issues)}
+          print(json.dumps(summary, indent=2))
+          for issue in issues: print(json.dumps(issue, ensure_ascii=True))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write("## Live SEO audit\n\n")
+              for key, value in summary.items(): f.write("- "+key.replace("_"," ")+": "+str(value)+"\n")
+              f.write("\nSee job logs for issue details. This is an HTTP and HTML source audit, not a browser or Lighthouse test.\n")
+          if issues: raise SystemExit(1)
+          PY
