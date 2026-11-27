@@ -140,8 +140,8 @@ jobs:
           for u, (status, final, chain, body, error) in batch(extras, lambda u: (u, fetch(u, False))):
               if status != 200 or chain or final != u: issues.append(("internal link status", u, status, final, chain, error))
           legacy = [(u+".html", u) for u in urls if urllib.parse.urlsplit(u).path.startswith("/articles/") and not u.endswith("/")]
-          for (old, expected), (status, final, chain, body, error) in batch(legacy, lambda pair: (pair, fetch(pair[0], False))):
-              if status != 200 or final != expected or not chain or any(code not in (301,308) for code, dest in chain):
+          for (old, expected_destination), (status, final, chain, body, error) in batch(legacy, lambda pair: (pair, fetch(pair[0], False))):
+              if status != 200 or final != expected_destination or not chain or any(code not in (301,308) for code, dest in chain):
                   issues.append(("legacy redirect", old, status, final, chain, error))
           # Verify the newest listed article's featured image response separately.
           article_urls = [u for u in urls if urllib.parse.urlsplit(u).path.startswith("/articles/") and not u.endswith("/")]
