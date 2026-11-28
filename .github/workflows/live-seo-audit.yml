@@ -39,6 +39,8 @@ jobs:
           SITEMAP = BASE + "/sitemap.xml"
           HOST = "rajkot.blog"
           LIMIT = 2_000_000
+          # Independent editorial contract: never derive this heading from index.html.
+          HOME_H1 = "Rajkot News, Travel, Food, Business & Education"
           def safe(url):
               p = urllib.parse.urlsplit(url)
               return p.scheme == "https" and p.netloc == HOST
@@ -74,6 +76,9 @@ jobs:
                   self.ids = set()
                   self.title_parts = []
                   self.h1_parts = []
+                  self.h1_count = 0
+                  self.h1_main_count = 0
+                  self.h1_ids = []
                   self.main_parts = []
                   self.in_title = False
                   self.in_h1 = False
@@ -82,7 +87,11 @@ jobs:
               def handle_starttag(self, tag, attrs):
                   a = dict(attrs)
                   if tag == 'title': self.in_title = True
-                  if tag == 'h1': self.in_h1 = True
+                  if tag == 'h1':
+                      self.in_h1 = True
+                      self.h1_count += 1
+                      self.h1_main_count += int(self.in_main)
+                      self.h1_ids.append(a.get('id'))
                   if tag == 'main': self.in_main = True
                   if tag in ('script','style'): self.ignore += 1
                   if a.get("id"): self.ids.add(a["id"])
@@ -103,6 +112,30 @@ jobs:
                   if self.in_main and not self.ignore: self.main_parts.append(data)
           def norm(parts):
               return ' '.join(' '.join(parts).split())
+          def home_heading_ok(page):
+              return (page.h1_count == 1 and page.h1_main_count == 1
+                      and page.h1_ids == ['homepage-heading']
+                      and norm(page.h1_parts) == HOME_H1)
+          def check_home_heading(html):
+              page = Page()
+              page.feed(html)
+              return home_heading_ok(page)
+          # Regression fixtures: the featured H2 may rotate, but missing,
+          # duplicated, moved, or rewritten primary headings must fail.
+          good = '<main><h1 id="homepage-heading">Rajkot News, Travel, Food, Business &amp; Education</h1><h2>Featured guide</h2></main>'
+          fixtures = [(good, True),
+                      (good.replace('Featured guide', 'Another story'), True),
+                      (good.replace('Rajkot News, Travel, Food, Business &amp; Education', 'Bus guide'), False),
+                      (good.replace('<h2>Featured guide</h2>', '<h1>Featured guide</h1>'), False),
+                      (good.replace('<h1', '<h2').replace('</h1>', '</h2>'), False),
+                      (good.replace('<main>', '<div>').replace('</main>', '</div>'), False)]
+          for fixture, wanted in fixtures:
+              if check_home_heading(fixture) != wanted:
+                  raise SystemExit("Homepage H1 regression test failed")
+          print("Homepage H1 regression tests passed:", len(fixtures))
+          if not check_home_heading(Path("index.html").read_text(encoding="utf-8")):
+              raise SystemExit("Repository homepage H1 contract failed: expected exactly one main H1 with id homepage-heading and text " + HOME_H1)
+          print("Repository permanent homepage H1 verified:", HOME_H1)
           def source_file(url):
               path = urllib.parse.unquote(urllib.parse.urlsplit(url).path).strip('/')
               root = Path.cwd()
@@ -147,7 +180,9 @@ jobs:
           def fetch_deployed(u):
               path = source_file(u)
               expected_html = path.read_text(encoding='utf-8') if path else ''
-              if 'id="mobile-performance-v1"' not in expected_html:
+              is_home = u == BASE + "/"
+              needs_mobile = 'id="mobile-performance-v1"' in expected_html
+              if not is_home and not needs_mobile:
                   return (u,fetch(u))
               expected_page = Page()
               expected_page.feed(expected_html)
@@ -157,7 +192,9 @@ jobs:
                   if status == 200 and not chain:
                       actual = Page()
                       actual.feed(body)
-                      if 'id="mobile-performance-v1"' in body and image_signature(actual) == image_signature(expected_page):
+                      heading_ready = not is_home or home_heading_ok(actual)
+                      mobile_ready = not needs_mobile or ('id="mobile-performance-v1"' in body and image_signature(actual) == image_signature(expected_page))
+                      if heading_ready and mobile_ready:
                           return (u,result)
                   if attempt < 4: time.sleep(15)
               return (u,result)
@@ -168,6 +205,7 @@ jobs:
           source_verified = 0
           content_verified = 0
           performance_markup_verified = 0
+          homepage_h1_verified = 0
           titles = {}
           anchors = []
           internal = set()
@@ -180,6 +218,12 @@ jobs:
               page = Page()
               page.feed(body)
               pages[u] = page
+              if u == BASE + "/":
+                  if not home_heading_ok(page):
+                      issues.append(('live permanent homepage H1 contract failed', u, page.h1_count, page.h1_main_count, page.h1_ids, norm(page.h1_parts)))
+                  else:
+                      homepage_h1_verified = 1
+                      print("Live permanent homepage H1 verified:", norm(page.h1_parts))
               title = norm(page.title_parts)
               if not title or not page.meta.get('description'): issues.append(('missing SEO title/description',u))
               if title in titles and title: issues.append(('duplicate title',u,titles[title]))
@@ -224,6 +268,8 @@ jobs:
                           continue
                       internal.add(target)
                       if fragment: anchors.append((u,target,urllib.parse.unquote(fragment)))
+          if homepage_h1_verified != 1:
+              issues.append(('live homepage H1 not verified', BASE + "/"))
           for u,target,fragment in anchors:
               if target in pages and fragment not in pages[target].ids and urllib.parse.urlsplit(target).path != '/articles/':
                   warnings.append(('anchor review',u,target+'#'+fragment))
@@ -253,7 +299,7 @@ jobs:
                               issues.append(("featured image response", latest, res.status, mime))
                   except Exception as e:
                       issues.append(("featured image check unavailable", latest, str(e)))
-          summary = {"expected_sitemap_urls":len(expected),"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"cloudflare_protected_email_links_skipped":protected_email_links,"legacy_redirects_checked":len(legacy),"issues":len(issues),"source_metadata_verified":source_verified,"article_main_text_verified":content_verified,"performance_markup_verified":performance_markup_verified,"warnings":len(warnings)}
+          summary = {"expected_sitemap_urls":len(expected),"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"cloudflare_protected_email_links_skipped":protected_email_links,"legacy_redirects_checked":len(legacy),"issues":len(issues),"source_metadata_verified":source_verified,"article_main_text_verified":content_verified,"performance_markup_verified":performance_markup_verified,"homepage_h1_verified":homepage_h1_verified,"warnings":len(warnings)}
           print(json.dumps(summary, indent=2))
           for issue in issues: print(json.dumps(issue, ensure_ascii=True))
           for warning in warnings: print('WARNING:',json.dumps(warning, ensure_ascii=True))

@@ -13,3 +13,7 @@ Static, responsive starter for a Rajkot city portal and local news publication.
 
 ## Editorial note
 This is a launch-ready design **starter**, not a live news feed. Add dated, sourced, reviewed articles before claiming news coverage. The editorial email is a placeholder and must be configured before public use.
+
+## Permanent homepage heading
+
+Keep exactly one homepage H1 inside `<main>`: `<h1 id="homepage-heading">Rajkot News, Travel, Food, Business &amp; Education</h1>`. It belongs to the permanent `.home-intro` block, not the rotating `.feature` section. When updating the featured article, retain `<h2 id="hero-heading">` and its `aria-labelledby` relationship, and update only its title, description, label and link. Do not replace or regenerate the permanent H1. The live SEO audit independently checks the repository and deployed homepage against this contract on pushes and daily runs; it fails if the heading is missing, duplicated or changed.
