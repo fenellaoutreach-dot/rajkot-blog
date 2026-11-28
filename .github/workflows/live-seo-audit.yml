@@ -16,7 +16,7 @@ permissions:
   contents: read
 concurrency:
   group: rajkot-live-seo-audit
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -139,12 +139,35 @@ jobs:
           def batch(items, fn):
               with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
                   return list(pool.map(fn, items))
-          results = batch(urls, lambda u: (u, fetch(u)))
+          # A sitemap can stay identical after a performance-only edit. Verify the
+          # relevant deployed image attributes against source, not just the sitemap.
+          image_keys = ('src','width','height','loading','fetchpriority','srcset','sizes')
+          def image_signature(page):
+              return [tuple(im.get(k) for k in image_keys) for im in page.images]
+          def fetch_deployed(u):
+              path = source_file(u)
+              expected_html = path.read_text(encoding='utf-8') if path else ''
+              if 'id="mobile-performance-v1"' not in expected_html:
+                  return (u,fetch(u))
+              expected_page = Page()
+              expected_page.feed(expected_html)
+              for attempt in range(5):
+                  result = fetch(u)
+                  status, final, chain, body, error = result
+                  if status == 200 and not chain:
+                      actual = Page()
+                      actual.feed(body)
+                      if 'id="mobile-performance-v1"' in body and image_signature(actual) == image_signature(expected_page):
+                          return (u,result)
+                  if attempt < 4: time.sleep(15)
+              return (u,result)
+          results = batch(urls, fetch_deployed)
           issues = []
           pages = {}
           warnings = []
           source_verified = 0
           content_verified = 0
+          performance_markup_verified = 0
           titles = {}
           anchors = []
           internal = set()
@@ -166,7 +189,12 @@ jobs:
               path = source_file(u)
               if path:
                   expected_page = Page()
-                  expected_page.feed(path.read_text(encoding='utf-8'))
+                  source_html = path.read_text(encoding='utf-8')
+                  expected_page.feed(source_html)
+                  if 'id="mobile-performance-v1"' in source_html:
+                      if 'id="mobile-performance-v1"' not in body or image_signature(page) != image_signature(expected_page):
+                          issues.append(('deployed performance markup differs from commit',u))
+                      else: performance_markup_verified += 1
                   if (title, page.meta.get('description'), norm(page.h1_parts)) != (norm(expected_page.title_parts), expected_page.meta.get('description'), norm(expected_page.h1_parts)):
                       issues.append(('deployed title/description/H1 differs from commit',u))
                   else: source_verified += 1
@@ -225,7 +253,7 @@ jobs:
                               issues.append(("featured image response", latest, res.status, mime))
                   except Exception as e:
                       issues.append(("featured image check unavailable", latest, str(e)))
-          summary = {"expected_sitemap_urls":len(expected),"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"cloudflare_protected_email_links_skipped":protected_email_links,"legacy_redirects_checked":len(legacy),"issues":len(issues),"source_metadata_verified":source_verified,"article_main_text_verified":content_verified,"warnings":len(warnings)}
+          summary = {"expected_sitemap_urls":len(expected),"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"cloudflare_protected_email_links_skipped":protected_email_links,"legacy_redirects_checked":len(legacy),"issues":len(issues),"source_metadata_verified":source_verified,"article_main_text_verified":content_verified,"performance_markup_verified":performance_markup_verified,"warnings":len(warnings)}
           print(json.dumps(summary, indent=2))
           for issue in issues: print(json.dumps(issue, ensure_ascii=True))
           for warning in warnings: print('WARNING:',json.dumps(warning, ensure_ascii=True))
