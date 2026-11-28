@@ -1,11 +1,17 @@
 name: Live SEO audit
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '30 1 * * *'
   push:
     branches: [main]
     paths:
       - '.github/workflows/live-seo-audit.yml'
       - 'sitemap.xml'
+      - 'index.html'
+      - 'articles/**'
+      - 'robots.txt'
+      - '.github/scripts/**'
 permissions:
   contents: read
 concurrency:
@@ -17,7 +23,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Read sitemap from triggering commit
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node 24
         with:
           persist-credentials: false
       - name: Audit deployed pages and legacy redirects
@@ -26,6 +32,7 @@ jobs:
           python3 - <<'PY'
           import concurrent.futures, json, os, time, urllib.request, urllib.error, urllib.parse
           import xml.etree.ElementTree as ET
+          from pathlib import Path
           from html.parser import HTMLParser
 
           BASE = "https://rajkot.blog"
@@ -65,8 +72,19 @@ jobs:
                   self.images = []
                   self.tables = []
                   self.ids = set()
+                  self.title_parts = []
+                  self.h1_parts = []
+                  self.main_parts = []
+                  self.in_title = False
+                  self.in_h1 = False
+                  self.in_main = False
+                  self.ignore = 0
               def handle_starttag(self, tag, attrs):
                   a = dict(attrs)
+                  if tag == 'title': self.in_title = True
+                  if tag == 'h1': self.in_h1 = True
+                  if tag == 'main': self.in_main = True
+                  if tag in ('script','style'): self.ignore += 1
                   if a.get("id"): self.ids.add(a["id"])
                   if tag == "a" and a.get("href"): self.links.add(a["href"])
                   if tag == "link" and "canonical" in (a.get("rel") or "").lower().split(): self.canon.append(a.get("href"))
@@ -74,6 +92,24 @@ jobs:
                   if tag == "img": self.images.append(a)
                   if tag == "table": self.tables.append(False)
                   if tag == "caption" and self.tables: self.tables[-1] = True
+              def handle_endtag(self, tag):
+                  if tag == 'title': self.in_title = False
+                  if tag == 'h1': self.in_h1 = False
+                  if tag == 'main': self.in_main = False
+                  if tag in ('script','style'): self.ignore = max(0,self.ignore-1)
+              def handle_data(self, data):
+                  if self.in_title: self.title_parts.append(data)
+                  if self.in_h1: self.h1_parts.append(data)
+                  if self.in_main and not self.ignore: self.main_parts.append(data)
+          def norm(parts):
+              return ' '.join(' '.join(parts).split())
+          def source_file(url):
+              path = urllib.parse.unquote(urllib.parse.urlsplit(url).path).strip('/')
+              root = Path.cwd()
+              candidates = [root / (path + '.html'), root / path / 'index.html'] if path else [root / 'index.html']
+              for p in candidates:
+                  if p.is_file() and p.resolve().is_relative_to(root): return p
+              return None
           # A push may precede the hosting deployment. Check sitemap readiness,
           # but do not call a failed or stale deployment a successful audit.
           def sitemap_records(root):
@@ -106,6 +142,11 @@ jobs:
           results = batch(urls, lambda u: (u, fetch(u)))
           issues = []
           pages = {}
+          warnings = []
+          source_verified = 0
+          content_verified = 0
+          titles = {}
+          anchors = []
           internal = set()
           protected_email_links = 0
           required = ["og:type","og:title","og:description","og:url","og:image","twitter:card","twitter:title","twitter:description","twitter:image"]
@@ -116,12 +157,34 @@ jobs:
               page = Page()
               page.feed(body)
               pages[u] = page
+              title = norm(page.title_parts)
+              if not title or not page.meta.get('description'): issues.append(('missing SEO title/description',u))
+              if title in titles and title: issues.append(('duplicate title',u,titles[title]))
+              titles[title] = u
+              if not page.meta.get('viewport'): issues.append(('missing mobile viewport',u))
+              if 'noindex' in (page.meta.get('robots') or '').lower(): issues.append(('unexpected noindex',u))
+              path = source_file(u)
+              if path:
+                  expected_page = Page()
+                  expected_page.feed(path.read_text(encoding='utf-8'))
+                  if (title, page.meta.get('description'), norm(page.h1_parts)) != (norm(expected_page.title_parts), expected_page.meta.get('description'), norm(expected_page.h1_parts)):
+                      issues.append(('deployed title/description/H1 differs from commit',u))
+                  else: source_verified += 1
+                  if path.parent.name == 'articles' and path.name != 'index.html':
+                      if '/cdn-cgi/l/email-protection' in body or 'data-cfemail' in body:
+                          warnings.append(('main text comparison skipped: email protection',u))
+                      elif norm(page.main_parts) != norm(expected_page.main_parts):
+                          issues.append(('deployed article main text differs from commit',u))
+                      else: content_verified += 1
+              else: issues.append(('sitemap URL has no source HTML file',u))
               if page.canon != [u]: issues.append(("canonical", u, page.canon))
               missing = [k for k in required if not page.meta.get(k)]
               if missing: issues.append(("social metadata", u, missing))
               if page.meta.get("og:url") != u: issues.append(("og:url mismatch", u, page.meta.get("og:url")))
               for im in page.images:
                   if not im.get("width") or not im.get("height"): issues.append(("image dimensions", u, im.get("src")))
+                  if 'alt' not in im: warnings.append(('missing image alt attribute',u,im.get('src')))
+                  if im.get('src') == '/assets/rajkot-logo.svg' and (im.get('width'),im.get('height')) != ('440','88'): warnings.append(('logo aspect ratio',u))
               if False in page.tables: issues.append(("table captions", u, page.tables.count(False)))
               for href in page.links:
                   target, fragment = urllib.parse.urldefrag(urllib.parse.urljoin(u, href))
@@ -132,10 +195,10 @@ jobs:
                           protected_email_links += 1
                           continue
                       internal.add(target)
-                      if fragment and target in pages and fragment not in pages[target].ids:
-                          # Category filters deliberately use dynamic fragments.
-                          if urllib.parse.urlsplit(target).path != "/articles/":
-                              issues.append(("anchor review", u, target+"#"+fragment))
+                      if fragment: anchors.append((u,target,urllib.parse.unquote(fragment)))
+          for u,target,fragment in anchors:
+              if target in pages and fragment not in pages[target].ids and urllib.parse.urlsplit(target).path != '/articles/':
+                  warnings.append(('anchor review',u,target+'#'+fragment))
           extras = sorted(internal - set(urls))
           for u, (status, final, chain, body, error) in batch(extras, lambda u: (u, fetch(u, False))):
               if status != 200 or chain or final != u: issues.append(("internal link status", u, status, final, chain, error))
@@ -162,12 +225,66 @@ jobs:
                               issues.append(("featured image response", latest, res.status, mime))
                   except Exception as e:
                       issues.append(("featured image check unavailable", latest, str(e)))
-          summary = {"expected_sitemap_urls":len(expected),"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"cloudflare_protected_email_links_skipped":protected_email_links,"legacy_redirects_checked":len(legacy),"issues":len(issues)}
+          summary = {"expected_sitemap_urls":len(expected),"sitemap_urls":len(urls),"parsed_pages":len(pages),"unique_internal_targets":len(internal),"extra_targets_checked":len(extras),"cloudflare_protected_email_links_skipped":protected_email_links,"legacy_redirects_checked":len(legacy),"issues":len(issues),"source_metadata_verified":source_verified,"article_main_text_verified":content_verified,"warnings":len(warnings)}
           print(json.dumps(summary, indent=2))
           for issue in issues: print(json.dumps(issue, ensure_ascii=True))
+          for warning in warnings: print('WARNING:',json.dumps(warning, ensure_ascii=True))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
               f.write("## Live SEO audit\n\n")
               for key, value in summary.items(): f.write("- "+key.replace("_"," ")+": "+str(value)+"\n")
               f.write("\nSee job logs for issue details. This is an HTTP and HTML source audit, not a browser or Lighthouse test.\n")
           if issues: raise SystemExit(1)
+          PY
+  mobile-performance:
+    needs: audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Run mobile Lighthouse on priority pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          mkdir -p /tmp/rajkot-lighthouse
+          npm install --prefix /tmp/rajkot-lighthouse --no-audit --no-fund --save-exact lighthouse@13.6.0
+          LH=/tmp/rajkot-lighthouse/node_modules/.bin/lighthouse
+          for route in home articles cafes food atal; do
+            case "$route" in
+              home) url=https://rajkot.blog/ ;;
+              articles) url=https://rajkot.blog/articles/ ;;
+              cafes) url=https://rajkot.blog/articles/cafes-in-rajkot-guide ;;
+              food) url=https://rajkot.blog/articles/famous-foods-of-rajkot ;;
+              atal) url=https://rajkot.blog/articles/atal-sarovar-rajkot-timings-tickets-family-guide-2026 ;;
+            esac
+            if ! "$LH" "$url" --only-categories=performance --chrome-flags="--headless --no-sandbox" --output=json --output-path="/tmp/rajkot-lighthouse/$route.json" --quiet; then
+              echo "::warning::Lighthouse could not complete $route"
+            fi
+          done
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          lines = ["## Mobile Lighthouse lab results", "", "| Page | Performance | LCP (s) | CLS | TBT (ms) |", "|---|---:|---:|---:|---:|"]
+          failed = []
+          for name in ("home","articles","cafes","food","atal"):
+              try:
+                  j = json.loads(Path(f"/tmp/rajkot-lighthouse/{name}.json").read_text())
+                  if j.get("runtimeError") or not j.get("categories",{}).get("performance"): raise ValueError("incomplete run")
+                  if not j.get("finalDisplayedUrl","").startswith("https://rajkot.blog/"): raise ValueError("unexpected final URL")
+                  score = j["categories"]["performance"]["score"]
+                  a = j["audits"]
+                  lcp = a["largest-contentful-paint"]["numericValue"]/1000
+                  cls = a["cumulative-layout-shift"]["numericValue"]
+                  tbt = a["total-blocking-time"]["numericValue"]
+                  lines.append(f"| {name} | {score*100:.0f} | {lcp:.2f} | {cls:.3f} | {tbt:.0f} |")
+                  if lcp>2.5 or cls>0.1 or tbt>200:
+                      print(f"::warning::Mobile lab performance target exceeded: {name}")
+              except Exception as e:
+                  failed.append(name)
+                  lines.append(f"| {name} | unavailable | — | — | — |")
+                  print(f"Measurement unavailable for {name}: {e}")
+          lines += ["", "Synthetic mobile lab data, not CrUX field data. TBT is a lab responsiveness proxy, not INP. Targets: LCP ≤2.5 s, CLS ≤0.1, TBT ≤200 ms. A single run is diagnostic, not a trend."]
+          report = "\n".join(lines)
+          print(report)
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as f: f.write(report+"\n")
+          if failed: raise SystemExit("Missing measurements: "+", ".join(failed))
           PY
